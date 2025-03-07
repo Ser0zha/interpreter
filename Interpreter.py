@@ -13,6 +13,10 @@ TOKENS = [
     (r'\)', 'RPAREN'),
     (r'[ \t\n]+', None),
 ]
+KEYWORDS = [
+    ("loopfor", "KW_FOR"),
+    ("loopwhile", "KW_WHILE"),
+]
 
 
 def checking_the_correctness_of_the_input(line_to_check: str) -> None:
@@ -28,41 +32,50 @@ def checking_the_correctness_of_the_input(line_to_check: str) -> None:
         pass
 
 
-def checking_for_end_of_line_semicolon(line_to_check: str) -> None:
-    """
-    Проверка окончание строка символом ';'
-    :param line_to_check:
-    :return:
-    """
-    global LINE_NUMBER
-    last = line_to_check[-1]
-    if last != ';':
-        raise Exception(f"Ошибка компиляции в строке {LINE_NUMBER}")
+def pre_processing(raw_string: str) -> list[str]:
+    return raw_string.strip().split()
 
 
 def recognizing_line_elements(string: str) -> list[list | list[str]]:
-    def pre_processing(raw_string: str) -> list[str]:
-        return raw_string.strip().split()
+    def checking_for_end_of_line_semicolon() -> None:
+        """
+        Проверка окончание строка символом ';'
+        :return:
+        """
+        global LINE_NUMBER
+        nonlocal processed_string
+
+        last = processed_string[-1]
+
+        if last[-1] != ';':
+            raise Exception(f"Ошибка компиляции в строке {LINE_NUMBER}")
+        else:
+            processed_string[-1] = processed_string[-1][0]
 
     string_buffer = []
     processed_string: list[str]
 
     processed_string = pre_processing(string)
-    checking_for_end_of_line_semicolon(processed_string[-1])
+    checking_for_end_of_line_semicolon()
 
     for index in range(len(processed_string)):
         # TODO len(): надо будет добавить проверку на длину symbol (например len() > 3 значит ключевое слово)
 
         if index == 0:
-            checking_the_correctness_of_the_input(processed_string[index])
+            checking_the_correctness_of_the_input(processed_string[index])\
 
+        match = None
         for pattern, token_type in TOKENS:
             regex = re.compile(pattern)
             match = regex.match(processed_string[index])
+
             if match:
                 value = match.group(0)
                 string_buffer.append([token_type, value])
                 break
+
+        if not match:
+            raise SyntaxError(f"Неожиданный символ: {processed_string[index]}")
 
     return string_buffer
 
